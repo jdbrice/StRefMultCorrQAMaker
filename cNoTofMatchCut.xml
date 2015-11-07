@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EventQA>
+
+
+	<Reporter>
+		<output url="" width="800" height="400" />
+	</Reporter>
+	
+	<input>
+		<dst treeName="tree" maxFiles="-1" url="/Users/danielbrandenburg/bnl/local/data/RM14_015/"/>
+	</input>
+
+	
+
+	
+	<eventCuts>
+		<vertexZ min="-70" max="70" />
+		<vertexR min="0.0" max="1.0" />
+		<vertexROffset x="0.0" y="-0.89" /> 
+		<tofMult min="0" />
+	</eventCuts>
+	<trackCuts>
+		<eta min="-0.5" max="0.5" />
+	</trackCuts>
+
+	<Periods>
+		<Period name="A" min="0" max="15053000" />
+		<Period name="B" min="15053001" max="15072000" />
+	</Periods>
+
+	<output>
+		<data>refMult.root</data>
+	</output>
+
+	<!-- Select on these triggers -->
+	<Triggers compare="false"> 440005, 440015</Triggers>
+	<TriggerMap>
+		<Trigger id="440005" name="BBC_MB"/>
+		<Trigger id="440015" name="BBC_MB"/>
+	</TriggerMap>
+
+
+	<histograms>
+
+		
+		<!--Before Event Cuts - I already have these
+		<preNTofMatch title="nTofMatch : Before Cuts" xBins="b.ri" yBins="b.refMult" />
+		<preShiftedVtxR title="Shifted vtxR : Before Cuts" xBins="b.ri" yBins="b.vtxR" />
+		<preVtxZ title="vtxZ : Before Cuts" xBins="b.ri" yBins="b.zVertex" /> -->
+
+
+		<!-- After cuts -->
+		<Histo name="nEvents" title="#Events" xBins="b.ri" />
+		<bbc title="BBC" xBins="b.ri" yBins="b.bbc" />
+		<zdc title="ZDC" xBins="b.ri" yBins="b.zdc" />
+
+		<nGlobal title="# of global tracks" xBins="b.ri" yBins="b.nGlobalTracks" />
+		<nPrimary title="# of Primary tracks" xBins="b.ri" yBins="b.nTracks" />
+		<nTofMatch title="nTofMatch" xBins="b.ri" yBins="b.refMult" />
+		
+
+		<vtxR title="vtxR" xBins="b.ri" yBins="b.vtxR" />
+		<vtxX title="vtxX" xBins="b.ri" yBins="b.vtxPerp" />
+		<vtxY title="vtxY" xBins="b.ri" yBins="b.vtxPerp" />
+		<vtxZ title="vtxZ" xBins="b.ri" yBins="b.zVertexCut" />
+		<Histo name="vtxRank" title="Primary Vertex Rank" xBins="b.ri" yBins="b.vtxRank" />
+		<vpdVtxZ title="VPD vtxZ" xBins="b.ri" yBins="b.zVertex" />
+		<diffVpdTpc title="VPD_{Z} - TPC_{Z}" xBins="b.ri" yBins="b.deltaZ" />
+		<shiftedVtxR title="Shifted vtxR" xBins="b.ri" yBins="b.vtxR" />
+		
+		<refMult title="refMult" xBins="b.ri" yBins="b.refMult" />
+		<tofMult title="tof mult" xBins="b.ri" yBins="b.tofMult" />
+
+		<!-- Track Observables -->
+		<etaPrimary title="#eta" xBins="b.ri" yBins="b.eta" />
+		<ptPrimary title="pT of Primary Tracks" xBins="b.ri" yBins="b.pt" />
+
+		<phiPrimary title="phi of Primary Tracks" xBins="b.ri" yBins="b.phi" />
+		<pPrimary title="momentum" xBins="b.ri" yBins="b.pt" />
+
+		<pxPrimary title="P_{x}" xBins="b.ri" yBins="b.pt" />
+		<pyPrimary title="P_{y}" xBins="b.ri" yBins="b.pt" />
+		<pzPrimary title="P_{z}" xBins="b.ri" yBins="b.pt" />
+
+		<PeriodDependent>
+			<!-- Period dependent -->
+			<refMultZ title="refMult" xBins="b.zVertexCut" yBins="b.refMult" />
+			<refMultBBC title="refMult" xBins="b.bbc" yBins="b.refMult" />
+			<refMultZDC title="refMult" xBins="b.zdc" yBins="b.refMult" />
+			<refMultTOF title="refMult" xBins="b.tofMult" yBins="b.refMult" />
+		</PeriodDependent>
+
+		
+	</histograms>
+
+	<b hide="true" >
+		<ri width="1" min="0.5" max="900.5" />
+
+		<events width="1" min="0" max="2" />
+		<pt width="0.005" min="0.1" max="10.0" />
+		<phi width="0.01" min="-6" max="6.0" />
+		<bbc nBins="200" min="0" max="5000"/>
+		<zdc width="1" min="0" max="100"/>
+		<nTracks width="1" min="0" max="1450"/>
+		<nGlobalTracks width="1" min="0" max="2250"/>
+		<vtxPerp width=".01" min="-4" max="4"/>
+		<vtx width="1" min="-100" max="100"/>
+		<vtxR width=".01" min="0" max="5"/>
+		<dca width=".01" min="-6" max="6"/>
+		<dcaMag width=".01" min="0" max="15"/>
+		<zVertex width="1" min="-200" max="200"/>
+		<zVertexCut width="1" min="-71" max="71"/>
+		<deltaZ width=".2" min="-30" max="30"/>
+		<eta width=".01" min="-3" max="3"/>
+		<tofMult width="2" min="0" max="1500" />
+		<refMult width="1" min="0" max="425" />
+		<vtxIndex width="1" min="0" max="5" />
+		<vtxRank width=".1" min="-5" max="5" />
+		
+		<q width="0.005" min="0.1" max="2.1" />
+	</b>
+
+	<badRuns>
+		
+	</badRuns>
+
+
+
+</EventQA>

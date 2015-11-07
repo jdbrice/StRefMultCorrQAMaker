@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<EventQA>
+
+	<RefMultCorrections zCorr="true" />
+	<eventCuts>
+		<vertexZ min="-70" max="70" />
+		<vertexR min="0.0" max="1.0" />
+		<vertexROffset x="0.0" y="-0.89" /> 
+		<tofMult min="2" />
+	</eventCuts>
+
+	<!-- Select on these triggers -->
+	<Triggers> 440005, 440015</Triggers>
+	<TriggerMap>
+		<Trigger id="440005" name="BBC_MB_A"/>
+		<Trigger id="440015" name="BBC_MB_B"/>
+	</TriggerMap>
+
+	<Periods>
+		<Period name="A" min="0" max="15053000" />
+		<Period name="B" min="15053001" max="15072000" />
+	</Periods>
+
+	<RemoveBadRuns>false</RemoveBadRuns>
+
+
+	<histograms>
+		<refMultZ title="refMult" xBins="b.zVertex" yBins="b.refMult" />
+		<etaVsPhi title="eta Vs. Phi" xBins="b.phi" yBins="b.eta" />
+	</histograms>
+
+	<b hide="true" >
+		<ei width="1" min="0.5" max="900.5" />
+
+		<events width="1" min="0" max="2" />
+		<pt width="0.005" min="0.1" max="10.0" />
+		<phi width="0.01" min="-6" max="6.0" />
+		<bbc nBins="200" min="0" max="5000"/>
+		<zdc width="1" min="0" max="100"/>
+		<nTracks width="1" min="0" max="1450"/>
+		<nGlobalTracks width="1" min="0" max="2250"/>
+		<vtxPerp width=".01" min="-4" max="4"/>
+		<vtx width="1" min="-100" max="100"/>
+		<vtxR width=".01" min="0" max="5"/>
+		<dca width=".01" min="-6" max="6"/>
+		<dcaMag width=".01" min="0" max="15"/>
+		<zVertex width="1" min="-200" max="200"/>
+		<deltaZ width=".2" min="-30" max="30"/>
+		<eta width=".01" min="-3" max="3"/>
+		<tofMult width="2" min="0" max="1500" />
+		<refMult width="1" min="0" max="425" />
+		
+		<q width="0.005" min="0.1" max="2.1" />
+	</b>
+
+	<badRuns>
+		
+	</badRuns>
+
+
+
+</EventQA>

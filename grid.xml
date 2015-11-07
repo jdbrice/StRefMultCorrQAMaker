@@ -1,23 +1,25 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<job maxFilesPerProcess="5" filesPerHour="500">
+<job maxFilesPerProcess="1" filesPerHour="500">
 	<command>
 		starver SL14i
  		pwd
-		root4star -b -q makeQA.C\(\"$FILELIST\",\"$JOBID.histo.root\"\) &gt;&amp; ${JOBID}.log
+		root4star -b -q makeQA.C\(\"cVpdVzCut.xml\",\"$FILELIST\",\"$JOBID.histo.root\"\) &gt;&amp; ${JOBID}.log
 	</command>
 
 	<stdout URL="file:/star/institutions/rice/jdb/run14/auau15/refMult/QA/log/$JOBID.out" />
 	
 	<stderr URL="file:/star/institutions/rice/jdb/run14/auau15/refMult/QA/log/$JOBID.err" />
 	
-	<input URL="filelist:/star/institutions/rice/jdb/run14/auau15/rcp/lists/st_physics.lis" />
+	<!--<input URL="filelist:/star/institutions/rice/jdb/run14/auau15/rcp/lists/st_physics.lis" />-->
+	<input URL="filelist:/star/u/jdb/work/StRefMultCorrQA/filelist.lis" />
+
 
 	    <output fromScratch="*" toURL="file:/star/institutions/rice/jdb/run14/auau15/refMult/QA/" />
 
 	<SandBox>
  		<Package>
  			<File>file:./makeQA.C</File> 
- 			<File>file:./cMakeQA.xml</File> 
+ 			<File>file:./cVpdVzCut.xml</File> 
  			<File>file:./.sl64_gcc447/</File> 
  		</Package> 
  	</SandBox>

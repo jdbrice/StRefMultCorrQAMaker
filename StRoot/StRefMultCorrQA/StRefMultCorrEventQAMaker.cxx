@@ -1,6 +1,6 @@
 
 
-#include "StRefMultCorrQAMaker.h"
+#include "StRefMultCorrEventQAMaker.h"
 
 #include "StMuDSTMaker/COMMON/StMuDstMaker.h"
 #include "StMuDSTMaker/COMMON/StMuTrack.h"
@@ -11,28 +11,29 @@
 #include "StMuDSTMaker/COMMON/StMuTriggerIdCollection.h"
 #include "StEvent/StBTofHeader.h"
 
-ClassImp(StRefMultCorrQAMaker);
+ClassImp(StRefMultCorrEventQAMaker);
 
-StRefMultCorrQAMaker::StRefMultCorrQAMaker( string configFile, string outName ) : 
-											StMaker("StRefMultCorrQAMaker") {
+StRefMultCorrEventQAMaker::StRefMultCorrEventQAMaker( string configFile, string outName ) : 
+											StMaker("StRefMultCorrEventQAMaker") {
 	int nRuns = 843;
 	runList.assign( aRunList, aRunList + nRuns );
 
 	int nBad = 101;
 	badRuns.assign( aBadRuns, aBadRuns + nBad );
 
-
-
 	cfg = new XmlConfig( configFile );
 
-	Logger::setGlobalLogLevel( Logger::llError );
-	logger.setLogLevel( Logger::llError );
+	Logger::setGlobalLogLevel( Logger::llAll );
+	logger.setLogLevel( Logger::llAll );
 
 	book = new HistoBook( outName, cfg );
 
+	rmc = new RefMultCorrection( "StRMCParams.xml" );
+	correctZ = cfg->getBool( "RefMultCorrections:zCorr", false );
+
 }
 
-StRefMultCorrQAMaker::~StRefMultCorrQAMaker() {
+StRefMultCorrEventQAMaker::~StRefMultCorrEventQAMaker() {
 
 	delete cfg;
 	// delete also saves
@@ -48,10 +49,12 @@ StRefMultCorrQAMaker::~StRefMultCorrQAMaker() {
 
 	}
 
+
+
 }
 
 
-Int_t StRefMultCorrQAMaker::Init(){
+Int_t StRefMultCorrEventQAMaker::Init(){
 	
 
 	logger.info( __FUNCTION__ ) << endl;
@@ -59,7 +62,7 @@ Int_t StRefMultCorrQAMaker::Init(){
 	if ( cfg->exists( "histograms") ){
 		book->cd();
 		book->makeAll( "histograms" );
-		//book->makeAll( "histograms.PeriodDependent" );
+		logger.info( __FUNCTION__ ) << "MAKING HISTOS" << endl;
 	}
 	else
 		logger.error( __FUNCTION__ ) << "Could not make histograms " << endl;
@@ -74,39 +77,34 @@ Int_t StRefMultCorrQAMaker::Init(){
 		logger.info(__FUNCTION__) << "Triggering on " << triggersToSelect[ i ] << endl;
 	}
 
-	compareTriggers = cfg->getBool( "Triggers:compare", false  );
-	if ( compareTriggers ){
-		vector<string> nToNames = cfg->childrenOf( "TriggerMap" );
-		for ( int i = 0; i < nToNames.size(); i++ ){
-			int tId = cfg->getInt( nToNames[ i ]+":id" );
-			string name = cfg->getString( nToNames[ i ]+":name" );
-			triggerNames[ tId ] = name;
+	/*
+	vector<string> nToNames = cfg->childrenOf( "TriggerMap" );
+	for ( int i = 0; i < nToNames.size(); i++ ){
+		int tId = cfg->getInt( nToNames[ i ]+":id" );
+		string name = cfg->getString( nToNames[ i ]+":name" );
+		triggerNames[ tId ] = name;
 
-			logger.info( __FUNCTION__ ) << tId << " --> " << name << endl;
+		logger.info( __FUNCTION__ ) << tId << " --> " << name << endl;
 
-			vector<string> histos = cfg->childrenOf( "histograms" );
-			for ( int j = 0; j < histos.size(); j++ ){
+		vector<string> histos = cfg->childrenOf( "histograms" );
+		for ( int j = 0; j < histos.size(); j++ ){
 
-				string hName = cfg->tagName( histos[ j ] );
-				if ( cfg->exists( histos[ j ] + ":name" ) )
-					hName = cfg->getString(histos[ j ] + ":name" );
+			string hName = cfg->tagName( histos[ j ] );
+			if ( cfg->exists( histos[ j ] + ":name" ) )
+				hName = cfg->getString(histos[ j ] + ":name" );
 
-				string newHName = (name + "_" + hName);
-				if ( !book->exists( newHName ) ){
-					logger.info( __FUNCTION__ )<< "Cloning " << hName << " to " << (name + "_" + hName) << endl;
-					book->clone( hName, newHName );
-				}			
+			string newHName = (name + "_" + hName);
+			if ( !book->exists( newHName ) ){
+				logger.info( __FUNCTION__ )<< "Cloning " << hName << " to " << (name + "_" + hName) << endl;
+				book->clone( hName, newHName );
+			}			
 
-				book->removeFromDir( hName );
-			}//loop over histograms
-		}//loop on trigger names
-	}
+			//book->removeFromDir( hName );
+		}//loop over histograms
+	}//loop on trigger names
+	*/
 
-	/**
-	 * Get Periods
-	 */
 	vector<string> nPNames = cfg->childrenOf( "Periods" );
-	cout << "N Periods" << nPNames.size() << endl;
 	for ( int i = 0; i < nPNames.size(); i++ ){
 		string name = cfg->getString( nPNames[ i ]+":name" );
 
@@ -114,7 +112,7 @@ Int_t StRefMultCorrQAMaker::Init(){
 		//cout << " Period " << name << " " << crg->toString() << endl;
 
 		periods[ name ] = crg;
-		vector<string> histos = cfg->childrenOf( "histograms.PeriodDependent" );
+		vector<string> histos = cfg->childrenOf( "histograms" );
 		for ( int j = 0; j < histos.size(); j++ ){
 
 			string hName = cfg->tagName( histos[ j ] );
@@ -129,34 +127,25 @@ Int_t StRefMultCorrQAMaker::Init(){
 
 			book->removeFromDir( hName );
 		}//loop over histograms
-	}//loop over periods
+	}//loop o
 
-
-	/**
-	 * Cuts
-	 */
+	
 	cutVertexZ = new ConfigRange( cfg, "eventCuts.vertexZ", -200, 200 );
 	cutVertexR = new ConfigRange( cfg, "eventCuts.vertexR", -200, 200 );
 	vertexROffset = new ConfigPoint( cfg, "eventCuts.vertexROffset", -200, 200 );
 	cutTofMatches = new ConfigRange( cfg, "eventCuts.tofMult", 0, 100000 );
-
-	cutEta = new ConfigRange( cfg, "trackCuts.eta", -10, 10 );
 
 	logger.info() << "Event Cuts : " << endl;
 	logger.info() << "\tcutVertexZ : " << cutVertexZ->toString() << endl;
 	logger.info() << "\tcutVertexR : " << cutVertexR->toString() << endl;
 	logger.info() << "\tcutVertexROffset : " << vertexROffset->toString() << endl;
 	logger.info() << "\tcutTofMult : " << cutTofMatches->toString() << endl;
-
-	logger.info() << "TrackCuts : " << endl;
-	logger.info() << "\tcutEta : " << cutEta->toString() << endl;
-
 	
 
 	return kStOK;
 } 
 
-Int_t StRefMultCorrQAMaker::Make(){
+Int_t StRefMultCorrEventQAMaker::Make(){
 
 	
 
@@ -179,14 +168,14 @@ Int_t StRefMultCorrQAMaker::Make(){
 	return kStOK;
 }
 
-Int_t StRefMultCorrQAMaker::Finish(){
+Int_t StRefMultCorrEventQAMaker::Finish(){
 
 
 	return kStOK;
 }
 
 
-Int_t StRefMultCorrQAMaker::processMuDst(){
+Int_t StRefMultCorrEventQAMaker::processMuDst(){
 
 	StMuEvent *muEvent = mMuDst->event();
 	if ( !muEvent )
@@ -195,49 +184,46 @@ Int_t StRefMultCorrQAMaker::processMuDst(){
 	UInt_t runId = muEvent->runId();
 	int ri = runIndex( runId );	
 
-	book->get( "cuts" )->Fill( "All", 1 );
-
-	if ( isBad( runId ) ){
+	if ( isBad( runId ) )
 		return kStOK;
-	}	
-
-	book->get( "cuts" )->Fill( "Good", 1 );
 
 
 	triggersFired.clear();
-	if ( !compareTriggers  )
-	triggersFired.push_back( "" ); // catch all triggers
+	//triggersFired.push_back( "" ); // catch all triggers
 	// look at the triggers
 	bool foundTrigger = false;
 	for ( int i = 0; i < triggersToSelect.size(); i++ ){
 
 		if ( muEvent->triggerIdCollection().nominal().isTrigger( triggersToSelect[ i ] ) ){
-
-			if ( compareTriggers )
-				triggersFired.push_back(  triggerNames[ triggersToSelect[ i ] ] + "_"  );
-
+			//triggersFired.push_back(  triggerNames[ triggersToSelect[ i ] ] + "_"  );
 			foundTrigger = true;
 		}
 	}
 
+
+
 	if ( !foundTrigger )
 		return kStOK;
 
-	book->get( "cuts" )->Fill( "BBC_MB", 1 );
+	typedef map<string, ConfigRange*>::iterator scrp_it_type;
+	for(scrp_it_type iterator = periods.begin(); iterator != periods.end(); iterator++) {
+
+		if ( iterator->second ){
+			ConfigRange * crg = iterator->second;
+			if ( runId >= crg->min && runId < crg->max ){
+				triggersFired.push_back( (iterator->first + "_") );
+			}
+		}
+	}
 	
 	UInt_t refMult = muEvent->refMult();
-	Float_t eventBBC = muEvent->runInfo().bbcCoincidenceRate();
-	Float_t eventZDC = muEvent->runInfo().zdcCoincidenceRate();
-
-	Int_t nTofMatch = 0;
-	Float_t rank = -1000;
-
+	Int_t nTofMatch = nTofMatchedTracks();
 	StThreeVectorD pVtx(-999., -999., -999.);  
 	if(mMuDst->primaryVertex()) {
 		pVtx = mMuDst->primaryVertex()->position();
-		nTofMatch = mMuDst->primaryVertex()->nBTOFMatch();
-		rank = mMuDst->primaryVertex()->ranking();
-		//cout << "RANK : " << rank << endl;
+		//cout << "NTofMatch " << mMuDst->primaryVertex()->nBTOFMatch() << endl;
+		//cout << "NBTofMatch " << mMuDst->primaryVertex()->numMatchesWithBTOF() << endl;
+		//nTofMatch = mMuDst->primaryVertex()->nBTOFMatch();
 	}
 
 
@@ -248,159 +234,37 @@ Int_t StRefMultCorrQAMaker::processMuDst(){
 	double vR = TMath::Sqrt( pVtx.x()*pVtx.x() + pVtx.y()*pVtx.y() );
 	double svR = TMath::Sqrt( vX*vX + vY*vY );
 
-	Int_t tofMult 	= mMuDst->numberOfBTofHit();
-	Int_t nGlobal 	= mMuDst->globalTracks()->GetEntries();
-	Int_t nPrimary 	= mMuDst->primaryTracks()->GetEntries();
-
-	double vpdVZ = -999;
-	if ( mMuDst->btofHeader() ){
-		vpdVZ = mMuDst->btofHeader()->vpdVz();	
-	}
-	
-
-	/**
-	 * Pre Cut histos to fill
-	for ( int i = 0; i < triggersFired.size(); i++ ){
-		string tn = triggersFired[ i ];
-
-		book->fill( tn+"preVtxZ", ri, pVtx.z() );
-		book->fill( tn+"preShiftedVtxR", ri, svR );
-		book->fill( tn+"preNTofMatch", ri, nTofMatch );
-	} 
-	*/
-
 
 	/**
 	 * EVENT CUTS
 	 */
+	if ( nTofMatch < cutTofMatches->min || nTofMatch > cutTofMatches->max )
+		return kStOK;
 
 	if ( svR < cutVertexR->min || svR > cutVertexR->max )
 		return kStOK;
 
-	book->get( "cuts" )->Fill( "vR", 1 );
-
 	if ( vZ < cutVertexZ->min || vZ > cutVertexZ->max )
 		return kStOK;
 
-	book->get( "cuts" )->Fill( "vZ", 1 );
-
-	if ( nTofMatch < cutTofMatches->min )
-		return kStOK;
-
-	book->get( "cuts" )->Fill( "nTofMatch", 1 );
-
-	for ( int i = 0; i < triggersFired.size(); i++ ){
-		string tn = triggersFired[ i ];
-		book->fill( tn+"vtxRankPreVpdCut", 	ri, rank );
-	}
-
-	//if ( TMath::Abs( vpdVZ - vZ ) > 3 )
-	//	return kStOK;
-
-	// analyze the tracks in the event 
-	analyzePrimaryTracks( ri, triggersFired );
-
 	// we should have an event with at least 2 tof-matched tracks now
 	
-	
+	if ( correctZ ){
+		refMult = rmc->refMult( refMult, vZ );
+	}
+
 	/**
 	 * Fill QA for each Trigger
 	 */
 	for ( int i = 0; i < triggersFired.size(); i++ ){
 		string tn = triggersFired[ i ];
-
-		book->fill( tn+"nEvents", 		ri );
-		book->fill( tn+"bbc", 			ri, eventBBC );
-		book->fill( tn+"zdc", 			ri, eventZDC );
-			
-	
-		book->fill( tn+"nGlobal", 		ri, nGlobal );
-		book->fill( tn+"nPrimary", 		ri, nPrimary );
-		book->fill( tn+"nTofMatch", 	ri, nTofMatch );
-
-		book->fill( tn+"vtxRank", 		ri, rank );
-		book->fill( tn+"vtxR", 			ri, vR );
-		book->fill( tn+"vtxX", 			ri, pVtx.x() );
-		book->fill( tn+"vtxY", 			ri, pVtx.y() );
-		book->fill( tn+"vtxZ", 			ri, pVtx.z() );
-		book->fill( tn+"vpdVtxZ", 		ri, vpdVZ );
-		book->fill( tn+"diffVpdTpc", 	ri, vpdVZ - vZ );
-		book->fill( tn+"shiftedVtxR", 	ri, svR );
-
-		book->fill( tn+"refMult", 		ri, refMult );
-		book->fill( tn+"tofMult", 		ri, tofMult );
+		book->fill( tn+"refMultZ", pVtx.z(), refMult );
 	}
-
-
-	/**
-	 * Loop over periods and report
-	 */
-	typedef map<string, ConfigRange*>::iterator scrp_it_type;
-	for(scrp_it_type iterator = periods.begin(); iterator != periods.end(); iterator++) {
-		if ( iterator->second ){
-			ConfigRange * crg = iterator->second;
-			if ( runId >= crg->min && runId < crg->max ){
-				
-				string prefix = iterator->first + "_";
-				book->fill( prefix+"refMultZ", pVtx.z(), refMult );
-				book->fill( prefix+"refMultBBC", eventBBC, refMult );
-				book->fill( prefix+"refMultZDC", eventZDC, refMult );
-				book->fill( prefix+"refMultTOF", tofMult, refMult );
-				
-
-			}
-		}
-	}
-
 
 	return kStOK;
 }
 
-
-Int_t StRefMultCorrQAMaker::analyzePrimaryTracks( Int_t ri, vector<string> tNames, bool afterCuts ){
-
-	Int_t nPrimary 	= mMuDst->primaryTracks()->GetEntries();
-	
-	for (int iNode = 0; iNode < nPrimary; iNode++ ){
-		StMuTrack*	tPrimary 	= (StMuTrack*)mMuDst->primaryTracks(iNode);
-		StMuTrack*	tGlobal 	= (StMuTrack*)tPrimary->globalTrack();
-
-		if ( !tPrimary ) continue;
-		//if ( tPrimary->vertexIndex() != 0 ) continue;
-
-		StThreeVectorF momentum = tPrimary->momentum();
-
-		double eta = momentum.pseudoRapidity();
-		if ( eta < cutEta->min || eta > cutEta->max )
-			continue;
-
-		for ( int i = 0; i < tNames.size(); i++ ){
-			string tn = tNames[ i ];
-
-			if ( afterCuts ){
-				book->fill( tn+"ptPrimary", ri, momentum.perp() );
-				book->fill( tn+"pPrimary", ri, momentum.magnitude() );
-				book->fill( tn+"etaPrimary", ri, momentum.pseudoRapidity() );
-				book->fill( tn+"phiPrimary", ri, momentum.phi() );
-
-				book->fill( tn+"etaVsPhi", momentum.phi(), momentum.pseudoRapidity() );
-
-				book->fill( tn+"pxPrimary", ri, momentum.x() );
-				book->fill( tn+"pyPrimary", ri, momentum.y() );
-				book->fill( tn+"pzPrimary", ri, momentum.z() );
-
-			} else {
-				book->fill( tn+"prePzPrimary", ri, momentum.z() );
-			}
-
-
-		}
-	}
-
-
-}
-
-Int_t StRefMultCorrQAMaker::nTofMatchedTracks(){
+Int_t StRefMultCorrEventQAMaker::nTofMatchedTracks(){
 
 	Int_t nPrimary 	= mMuDst->primaryTracks()->GetEntries();
 	Int_t nTofMatched = 0;
@@ -424,7 +288,7 @@ Int_t StRefMultCorrQAMaker::nTofMatchedTracks(){
 
 }
 
-int StRefMultCorrQAMaker::aRunList[] = {
+int StRefMultCorrEventQAMaker::aRunList[] = {
 1000,
 15046073, 
 15046089, 
@@ -1270,10 +1134,7 @@ int StRefMultCorrQAMaker::aRunList[] = {
 15070021
 };
 
-
-
-
-int StRefMultCorrQAMaker::aBadRuns[] = { 
+int StRefMultCorrEventQAMaker::aBadRuns[] = { 
 15046073, 
 15046089, 
 15046094, 
@@ -1376,7 +1237,3 @@ int StRefMultCorrQAMaker::aBadRuns[] = {
 15070009, 
 15070010
 };
-
-
-
-

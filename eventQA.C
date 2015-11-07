@@ -7,8 +7,7 @@ class     St_db_Maker;
 
 void loadLibs();
 
-void makeQA(    const Char_t *configFile = "cVpdVzCut.xml",
-				const Char_t *fileList = "filelist.lis",
+void eventQA(    const Char_t *fileList = "run15050004.lis",
 				const Char_t *outName = "rmcQA.histo.root" )
 {
 
@@ -17,8 +16,8 @@ void makeQA(    const Char_t *configFile = "cVpdVzCut.xml",
 
 	Int_t iEvt = 0, istat = 0;
 
-	Int_t nEvents = 20000000;
-	Int_t nfiles = 5;
+	Int_t nEvents = 500000000;
+	Int_t nfiles = 1;
 
 	//
 	// First load some shared libraries we need
@@ -39,7 +38,7 @@ void makeQA(    const Char_t *configFile = "cVpdVzCut.xml",
   	muDstMaker->SetStatus("GlobalTrack*",1);
   	muDstMaker->SetStatus("BTof*",1);
 
-	StRefMultCorrQAMaker * rmcQA = new StRefMultCorrQAMaker( configFile, outName );
+	StRefMultCorrEventQAMaker * rmcQA = new StRefMultCorrEventQAMaker( "cEventMakeQA.xml", outName );
 	//StRmcQAMaker * rmcQA = new StRmcQAMaker( muDstMaker, outName );
 	
 	// Initialize chain

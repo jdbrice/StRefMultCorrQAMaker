@@ -1,5 +1,5 @@
-#ifndef ST_REFMULTCORR_QA_MAKER_H
-#define ST_REFMULTCORR_QA_MAKER_H
+#ifndef ST_REFMULTCORR_EVENT_QA_MAKER_H
+#define ST_REFMULTCORR_EVENT_QA_MAKER_H
 
 /**
  * STAR
@@ -36,7 +36,7 @@ class StMuDstMaker;
 class StMuDst;
 class StMuEvent;
 
-class StRefMultCorrQAMaker : public StMaker {
+class StRefMultCorrEventQAMaker : public StMaker {
 
 protected:
 	static int aRunList[];
@@ -45,10 +45,9 @@ protected:
 	static int aBadRuns[];
 	vector<int> badRuns;
 
-	bool compareTriggers;
+	bool removeBadRuns;
 
 	ConfigRange * cutTofMatches;
-	ConfigRange * cutEta;
 	ConfigRange * cutVertexZ;
 	ConfigRange * cutVertexR;
 	ConfigPoint * vertexROffset;
@@ -61,13 +60,16 @@ protected:
 	vector<int> triggersToSelect;
 	map<int, string> triggerNames;
 
-	vector<string> triggersFired;
-
 	map< string, ConfigRange * > periods;
 
+	vector<string> triggersFired;
+
+	RefMultCorrection * rmc;
+	bool correctZ;
+
 public:
-	StRefMultCorrQAMaker( string configFile, string outName="rmcQA.histo.root");
-	virtual	~StRefMultCorrQAMaker(); 
+	StRefMultCorrEventQAMaker( string configFile, string outName="rmcQA.histo.root");
+	virtual	~StRefMultCorrEventQAMaker(); 
 
 	/*
 	Called Once at the beginning of the job
@@ -86,8 +88,6 @@ public:
 	Int_t Finish(); 
 
 	Int_t processMuDst();
-
-	Int_t analyzePrimaryTracks( Int_t ri, vector<string> tNames, bool afterCuts = true );
 
 	Int_t nTofMatchedTracks();
 
@@ -112,7 +112,7 @@ protected:
 
 
 public:
-	ClassDef(StRefMultCorrQAMaker,1);
+	ClassDef(StRefMultCorrEventQAMaker,1);
 };
 
 

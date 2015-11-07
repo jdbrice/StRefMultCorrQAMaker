@@ -1,0 +1,11 @@
+*.lis
+temp*
+
+*.root
+*.lis
+*.list
+._*
+
+.sl64_*
+
+CVS
